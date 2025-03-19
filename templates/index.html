@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giám sát IDS Mạng</title>
+    <!-- Include Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #2c3e50, #4ca1af);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+        .card {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.2);
+        }
+        .output {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            color: #333;
+            padding: 10px;
+        }
+        #status {
+            margin-top: 20px; /* Thêm khoảng cách */
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        /* Làm mờ nền khi thông báo xuất hiện */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Hộp thông báo */
+        .popup {
+            background-color: #FA8072;
+            color: black;
+            padding: 30px; /* Tăng padding */
+            border-radius: 15px; /* Tăng bo góc */
+            box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.5); /* Tăng hiệu ứng shadow */
+            text-align: center;
+            max-width: 500px; /* Tăng độ rộng tối đa */
+            width: 90%; /* Đảm bảo vừa trên màn hình nhỏ */
+            font-size: 1.2rem; /* Tăng kích cỡ chữ */
+        }
+
+        .popup button {
+            margin-top: 15px;
+            margin-left: 5px;
+            margin-right: 5px;
+            font-size: 1rem; /* Tăng kích cỡ nút */
+        }
+
+        /* Hiển thị thông báo */
+        .overlay.show {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Hệ thống phát hiện tấn công mạng IDS</h1>
+        <div class="card p-4">
+            <div class="text-center">
+                <button id="startBtn" class="btn btn-success btn-lg mx-2" onclick="startMonitoring()">Bắt đầu giám sát</button>
+                <button id="stopBtn" class="btn btn-danger btn-lg mx-2" onclick="stopMonitoring()">Dừng giám sát</button>
+                <button id="editRulesBtn" class="btn btn-primary btn-lg mx-2" onclick="editRules()">Thêm/Sửa Rules Snort</button>
+
+            </div>
+            <div id="status" class="alert alert-info text-center mt-4">
+                Trạng thái: Không giám sát
+            </div>
+            <div id="output" class="output mt-3">
+                <!-- Kết quả của Snort sẽ được hiển thị ở đây -->
+                <div id="loadingIndicator" class="text-center mt-5" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Đang tải...</span>
+                    </div>
+                    <p>Đang tải dữ liệu...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phần overlay thông báo -->
+    <div id="alertOverlay" class="overlay">
+        <div class="popup">
+            <h3>Cảnh báo</h3>
+            <p>Có tấn công mạng được phát hiện!</p>
+            <button class="btn btn-danger" onclick="exitAlert()">Đóng</button>
+            <button class="btn btn-primary" onclick="viewAttackData()">Xem dữ liệu</button>
+        </div>
+    </div>
+
+    <!-- Include Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        const outputDiv = document.getElementById('output');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
+        function startMonitoring() {
+            fetch('/start', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => updateStatus(data));
+        }
+
+        function stopMonitoring() {
+            fetch('/stop', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => updateStatus(data));
+        }
+
+        function updateStatus(data) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerText = `Trạng thái: ${data.message}`;
+            statusDiv.className = `alert alert-${data.status === 'success' ? 'success' : data.status === 'warning' ? 'warning' : 'danger'} text-center`;
+        }
+
+        function checkAlert() {
+            fetch('/check_alert')
+                .then(response => response.json())
+                .then(data => {
+                    const alertOverlay = document.getElementById('alertOverlay');
+                    if (data.alert) {
+                        alertOverlay.classList.add('show');
+                    } else {
+                        alertOverlay.classList.remove('show');
+                    }
+                });
+        }
+
+        function exitAlert() {
+            fetch('/reset_alert', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById('alertOverlay').classList.remove('show');
+                    } else {
+                        console.error('Failed to reset alert status:', data.message);
+                    }
+                });
+        }
+
+        function editRules() {
+            window.location.href = '/edit_rules';
+        }
+
+        function viewAttackData() {
+            fetch('/open_attack_folder', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Folder opened successfully on the server.');
+                    } else {
+                        alert('Failed to open folder: ' + data.message);
+                    }
+                });
+        }
+
+        // Cập nhật thông báo mỗi 5 giây
+        setInterval(checkAlert, 5000);
+
+        // Cập nhật trạng thái và kết quả mỗi giây
+        setInterval(() => {
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusDiv = document.getElementById('status');
+                    statusDiv.innerText = `Trạng thái: ${data.is_monitoring ? 'Đang giám sát' : 'Không giám sát'}`;
+                    statusDiv.className = `alert alert-${data.is_monitoring ? 'success' : 'info'} text-center`;
+
+                    if (data.is_monitoring) {
+                        loadingIndicator.style.display = 'block';
+                    } else {
+                        loadingIndicator.style.display = 'none';
+                    }
+
+                    if (data.output && data.output.length > 0) {
+                        data.output.forEach(line => {
+                            const lineElement = document.createElement('div');
+                            lineElement.textContent = line;
+                            outputDiv.appendChild(lineElement);
+                        });
+                        outputDiv.scrollTop = outputDiv.scrollHeight;
+                    }
+                });
+        }, 1000);
+    </script>
+</body>
+</html>

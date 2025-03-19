@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thêm/Sửa Rules</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #2c3e50, #4ca1af);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+        .container {
+            margin-top: -50px; /* Đẩy bảng lên trên 1 xíu */
+        }
+        .card {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.2);
+        }
+        .card-header {
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white text-center">
+                <h2>Thêm/Sửa Rules</h2>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    <div class="form-group">
+                        <label for="rules" class="font-weight-bold">Nội dung Rules:</label>
+                        <textarea id="rules" name="rules" class="form-control" rows="15" placeholder="Nhập nội dung rules...">{{ rules }}</textarea>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Lưu Rules
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="goBack()">
+                            <i class="fas fa-arrow-left"></i> Quay lại
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
+    <script>
+        function goBack() {
+            window.location.href = '/'; // Điều chỉnh URL về trang chủ hoặc route phù hợp
+        }
+    </script>
+</body>
+</html>
